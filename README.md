@@ -2,8 +2,6 @@
 
 A computer vision pipeline utilizing a custom-trained YOLOv26 Nano model to perform instance segmentation on concrete structures. This tool is designed to process drone imagery to simultaneously identify structural boundaries (via polygon masks) and isolate surface-level decay such as cracks (via bounding boxes).
 
-🚀 Try the Live Web App on Hugging Face Spaces!
-
 📂 Repository Structure
 
 concrete-defect-segmentation/
