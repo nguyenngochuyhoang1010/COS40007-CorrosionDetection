@@ -14,10 +14,6 @@ concrete-defect-segmentation/
 ├── scripts/                    
 │   └── app.py                  # Streamlit Web User Interface
 │
-├── notebooks/                  
-│   ├── 01_data_conversion.ipynb  # Labelme JSON to YOLO TXT conversion
-│   └── 02_yolov8_training.ipynb  # Model training and evaluation
-│
 ├── .gitignore                  # Ignores large datasets and python cache
 ├── requirements.txt            # Python dependencies
 └── README.md                   # Project documentation
