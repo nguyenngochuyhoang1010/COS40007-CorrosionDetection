@@ -63,15 +63,6 @@ if uploaded_file is not None:
             # Run the YOLO inference on the uploaded image
             results = model.predict(source=image, conf=conf_threshold)
             
-            # --- THE INFERENCE TRICK (Merging Classes) ---
-            # We intercept the model's internal dictionary before drawing the image.
-            # If it predicted "alligator crack" or "concrete crack", it will display just "crack".
-            names_dict = results[0].names
-            for key, value in names_dict.items():
-                if "crack" in value.lower():
-                    names_dict[key] = "crack"
-                elif "corrosion" in value.lower():
-                    names_dict[key] = "corrosion"
             
             # Plot the masks and bounding boxes using the updated class names
             res_plotted = results[0].plot()
