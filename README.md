@@ -49,13 +49,7 @@ streamlit run scripts/app.py
 
 The app will automatically open in your default web browser at http://localhost:8501.
 
-🧠 Model Information & Performance
-
-Architecture: YOLOv26 Nano Instance Segmentation (yolo26n-seg.pt)
-
-Dataset: High-variance subset of the SDNET2018 dataset (Bridge decks, walls, and pavements).
-
-Classes: concrete_structure and crack_defect
+🧠 Model Performance
 
 Performance Baseline (50 Epochs): * ~70% mAP@0.5 for Bounding Boxes (Localization)
 
