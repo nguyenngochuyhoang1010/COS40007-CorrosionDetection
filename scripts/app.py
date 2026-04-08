@@ -55,7 +55,7 @@ if input_mode == "Image Upload":
         image = Image.open(uploaded_file)
         
         # Safety Resize to prevent cloud RAM crashes
-        max_size = 1280
+        max_size = 640
         if max(image.size) > max_size:
             image.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
 
@@ -94,7 +94,7 @@ elif input_mode == "Video Upload":
 
                 # --- NEW: SAFETY RESIZE FOR VIDEO ---
                 # Shrink video resolution to prevent cloud crashes and speed up inference
-                max_vid_size = 800  # 800px is a great balance for video processing on CPUs
+                max_vid_size = 640
                 if max(orig_width, orig_height) > max_vid_size:
                     scale = max_vid_size / max(orig_width, orig_height)
                     new_width = int(orig_width * scale)
