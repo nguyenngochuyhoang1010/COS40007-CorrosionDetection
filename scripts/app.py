@@ -43,6 +43,9 @@ uploaded_file = st.file_uploader("Choose a drone image...", type=["jpg", "jpeg",
 if uploaded_file is not None:
     # Open the image using PIL
     image = Image.open(uploaded_file)
+    max_size = 1280
+    if max(image.size) > max_size:
+        image.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
     
     # Create two columns for a side-by-side comparison
     col1, col2 = st.columns(2)
