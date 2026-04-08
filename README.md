@@ -8,7 +8,7 @@ https://huggingface.co/spaces/venenacoenubia/structural-defect-detector
 📂 Repository Structure
 
 concrete-defect-segmentation/
-│
+`│
 ├── models/                     
 │   └── best.pt                 # Custom-trained YOLOv26 Nano weights
 │
@@ -18,7 +18,7 @@ concrete-defect-segmentation/
 ├── .gitignore                  # Ignores large datasets and python cache
 ├── requirements.txt            # Python dependencies
 └── README.md                   # Project documentation
-
+`
 
 🚀 Getting Started (Local Deployment)
 
