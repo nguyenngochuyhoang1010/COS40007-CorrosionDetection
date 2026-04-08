@@ -1,6 +1,7 @@
 import streamlit as st
 from ultralytics import YOLO
 from PIL import Image
+import os
 
 # 1. Page Configuration
 st.set_page_config(page_title="Structural Defect Detector", layout="wide")
@@ -15,14 +16,25 @@ conf_threshold = st.sidebar.slider("Confidence Threshold", min_value=0.0, max_va
 # st.cache_resource ensures Hugging Face only loads the AI once, saving RAM.
 @st.cache_resource
 def load_model():
-    # Looks for the best.pt file in the exact same folder as this script
-    return YOLO('best.pt')
+    # Dynamically find the absolute path to the directory this script is in (scripts folder)
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # Navigate UP one level to the root directory, then into the models folder
+    root_dir = os.path.dirname(current_dir)
+    weights_path = os.path.join(root_dir, 'models', 'best.pt')
+    
+    # NEW: Let's prove mathematically if the file is there or not
+    if not os.path.exists(weights_path):
+        raise FileNotFoundError(f"Python looked exactly here: {weights_path} but it was empty.")
+        
+    return YOLO(weights_path)
 
-# Safely attempt to load the model and warn if the file is missing
+# Safely attempt to load the model and expose the TRUE error
 try:
     model = load_model()
 except Exception as e:
-    st.error("Model weights not found! Please ensure 'best.pt' is uploaded to the repository.")
+    st.error(f"🚨 Critical Model Error: {e}")
+    st.info("Screenshot this error so we can debug exactly what went wrong!")
     st.stop()
 
 # 4. Image Upload Widget
