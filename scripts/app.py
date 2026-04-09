@@ -13,12 +13,6 @@ st.title("🏗️ Drone Diagnostics: Structure & Defect Segmentation")
 st.sidebar.header("Model Settings")
 conf_threshold = st.sidebar.slider("Confidence Threshold", min_value=0.0, max_value=1.0, value=0.25, step=0.05)
 
-st.sidebar.markdown(
-    "**IoU (Intersection over Union)** controls overlapping boxes. "
-    "Lower it to remove duplicate predictions on the same defect."
-)
-iou_threshold = st.sidebar.slider("IoU Threshold (NMS)", min_value=0.0, max_value=1.0, value=0.45, step=0.05)
-
 # --- NEW: VISUAL TOGGLES ---
 st.sidebar.markdown("---")
 st.sidebar.header("Visual Settings")
