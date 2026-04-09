@@ -9,9 +9,20 @@ import tempfile
 st.set_page_config(page_title="Drone Diagnostics", page_icon="🏗️", layout="wide")
 st.title("🏗️ Drone Diagnostics: Structure & Defect Segmentation")
 
-# 2. Sidebar Settings
+# 2. Sidebar Settings & Session Management
 st.sidebar.header("Model Settings")
 conf_threshold = st.sidebar.slider("Confidence Threshold", min_value=0.0, max_value=1.0, value=0.25, step=0.05)
+
+# --- NEW: VISUAL TOGGLES ---
+st.sidebar.markdown("---")
+st.sidebar.header("Visual Settings")
+show_boxes = st.sidebar.toggle("Show Bounding Boxes", value=True)
+show_labels = st.sidebar.toggle("Show Class Labels", value=True)
+# ---------------------------
+
+if st.sidebar.button("🧹 Clear Session / Reset App"):
+    st.cache_resource.clear()
+    st.rerun()
 
 # 3. Input Mode Selector
 st.sidebar.markdown("---")
@@ -25,7 +36,6 @@ def load_model():
     weights_path = os.path.join(root_dir, 'models', 'best.pt')
     
     if not os.path.exists(weights_path):
-        # Fallback for Hugging Face flat directory structure if models/ isn't used
         weights_path = os.path.join(current_dir, 'best.pt')
         if not os.path.exists(weights_path):
             raise FileNotFoundError(f"Model weights not found at {weights_path}")
@@ -45,29 +55,41 @@ except Exception as e:
 if input_mode == "Image Upload":
     st.write("Upload a drone image to detect structures and surface decay.")
     
-    # NEW: Add a highly visible pro-tip so users know about the secret paste feature!
-    st.info("💡 **Pro Tip:** You can take a screenshot, click anywhere on the **blank background** of this app (outside the grey box), and press **Ctrl+V** (or **Cmd+V** on Mac) to paste it directly!")
+    st.info("""
+    💡 **How to Paste (Chrome/Edge):**
+    1. Click the **Lock Icon** 🔒 in your browser's address bar and set **Clipboard** to **'Allow'**.
+    2. Click once on the **sidebar** to focus the window.
+    3. Press **Ctrl+V**. 
     
-    # Update the label to make it obvious
-    uploaded_file = st.file_uploader("Drag & drop, browse, or press Ctrl+V anywhere on the page...", type=["jpg", "jpeg", "png"])
+    *If it still fails, your browser may be blocking clipboard access for security. Please use **Drag & Drop** instead.*
+    """)
+    
+    uploaded_file = st.file_uploader("Drag & drop, browse, or press Ctrl+V anywhere...", type=["jpg", "jpeg", "png"])
 
     if uploaded_file is not None:
-        image = Image.open(uploaded_file)
-        
-        # Safety Resize to prevent cloud RAM crashes
-        max_size = 640
-        if max(image.size) > max_size:
-            image.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+        try:
+            image = Image.open(uploaded_file)
+            
+            # Match training resolution: 640px
+            max_size = 640
+            if max(image.size) > max_size:
+                image.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.image(image, caption="Original Image", use_container_width=True)
+            col1, col2 = st.columns(2)
+            with col1:
+                st.image(image, caption="Original (Optimized to 640px)", use_container_width=True)
 
-        with col2:
-            with st.spinner("Analyzing structural integrity..."):
-                results = model.predict(source=image, conf=conf_threshold)
-                res_plotted = results[0].plot()
-                st.image(res_plotted, caption="Segmentation Results", channels="BGR", use_container_width=True)
+            with col2:
+                with st.spinner("Analyzing structural integrity..."):
+                    results = model.predict(source=image, conf=conf_threshold, imgsz=640)
+                    
+                    # --- NEW: APPLY TOGGLES TO THE PLOT ---
+                    res_plotted = results[0].plot(boxes=show_boxes, labels=show_labels)
+                    # --------------------------------------
+                    
+                    st.image(res_plotted, caption="Segmentation Results", channels="BGR", use_container_width=True)
+        except Exception as e:
+            st.error(f"Error processing image: {e}. Try clicking 'Clear Session' in the sidebar.")
 
 
 # ==========================================
@@ -80,20 +102,16 @@ elif input_mode == "Video Upload":
 
     if uploaded_video is not None:
         if st.button("Start Video Analysis"):
-            with st.spinner("Processing video... this may take a while."):
-                # Save uploaded video to a temporary file
+            with st.spinner("Processing video... matching to training resolution (640px)."):
                 tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
                 tfile.write(uploaded_video.read())
                 
-                # Open the video with OpenCV
                 cap = cv2.VideoCapture(tfile.name)
                 orig_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                 orig_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                 fps = int(cap.get(cv2.CAP_PROP_FPS))
                 total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-                # --- NEW: SAFETY RESIZE FOR VIDEO ---
-                # Shrink video resolution to prevent cloud crashes and speed up inference
                 max_vid_size = 640
                 if max(orig_width, orig_height) > max_vid_size:
                     scale = max_vid_size / max(orig_width, orig_height)
@@ -103,7 +121,6 @@ elif input_mode == "Video Upload":
                     new_width = orig_width
                     new_height = orig_height
 
-                # Create an output temporary file
                 out_file = tempfile.NamedTemporaryFile(delete=False, suffix='.webm')
                 fourcc = cv2.VideoWriter_fourcc(*'VP80')
                 out = cv2.VideoWriter(out_file.name, fourcc, fps, (new_width, new_height))
@@ -116,25 +133,21 @@ elif input_mode == "Video Upload":
                     if not ret:
                         break
                     
-                    # Resize the frame BEFORE giving it to the AI
                     frame = cv2.resize(frame, (new_width, new_height))
+                    results = model.predict(frame, conf=conf_threshold, imgsz=640, verbose=False)
                     
-                    # Run YOLO inference on the frame
-                    results = model.predict(frame, conf=conf_threshold, verbose=False)
-                    res_frame = results[0].plot()
+                    # --- NEW: APPLY TOGGLES TO THE PLOT ---
+                    res_frame = results[0].plot(boxes=show_boxes, labels=show_labels)
+                    # --------------------------------------
                     
-                    # Write to the output video
                     out.write(res_frame)
                     
-                    # Update progress bar
                     frame_count += 1
                     if total_frames > 0:
                         progress_bar.progress(min(frame_count / total_frames, 1.0))
 
-                # Release resources
                 cap.release()
                 out.release()
-                
                 st.success("Video processing complete!")
                 st.video(out_file.name)
 
@@ -144,17 +157,19 @@ elif input_mode == "Video Upload":
 # ==========================================
 elif input_mode == "Live Camera":
     st.write("Use your device's camera to capture structures in the field.")
-    # Streamlit's built-in camera widget
     camera_photo = st.camera_input("Take a photo to analyze")
 
     if camera_photo is not None:
         image = Image.open(camera_photo)
+        max_size = 640
+        if max(image.size) > max_size:
+            image.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
         
         with st.spinner("Analyzing structural integrity..."):
-            results = model.predict(source=image, conf=conf_threshold)
-            res_plotted = results[0].plot()
-            st.image(res_plotted, caption="Segmentation Results", channels="BGR", use_container_width=True)
+            results = model.predict(source=image, conf=conf_threshold, imgsz=640)
             
-            # Display the final analyzed image 
-            # (channels="BGR" is required because OpenCV outputs in Blue-Green-Red format)
-            st.image(res_plotted, channels="BGR", use_container_width=True)
+            # --- NEW: APPLY TOGGLES TO THE PLOT ---
+            res_plotted = results[0].plot(boxes=show_boxes, labels=show_labels)
+            # --------------------------------------
+            
+            st.image(res_plotted, caption="Segmentation Results", channels="BGR", use_container_width=True)
